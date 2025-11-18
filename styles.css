@@ -1,0 +1,106 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+}
+
+header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1a1a1a;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#searchInput {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    width: 40%;
+}
+
+.section-title {
+    padding-left: 15px;
+    margin-top: 20px;
+    font-size: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    padding: 15px;
+}
+
+.channel-card {
+    background: #222;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid transparent;
+}
+
+.channel-card:hover {
+    transform: scale(1.05);
+    border-color: #0af;
+}
+
+.channel-logo {
+    width: 100%;
+    border-radius: 8px;
+}
+
+#playerContainer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+}
+
+video {
+    width: 90%;
+    height: auto;
+    max-height: 80vh;
+    border-radius: 10px;
+}
+
+#closePlayer {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border: none;
+    background: red;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#categories {
+    padding: 10px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.category-btn {
+    padding: 8px 16px;
+    background: #222;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid #333;
+    white-space: nowrap;
+}
+
+.category-btn.active {
+    background: #0af;
+    color: #000;
+}
