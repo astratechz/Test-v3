@@ -1,7 +1,7 @@
 /*
   player.js
   - Contains channel list
-  - Fetches MPD via API (POST)
+  - Fetches MPD via API (POST) or uses test MPD
   - Loads into Shaka Player
   - Auto-refresh logic
   - Debug logging
@@ -14,10 +14,7 @@ const API_BEARER = "Bearer 51b969b5ddee963de6c75686eb75adfd5709f31fd04335ee0a265
 /* refresh interval in ms (default 5 minutes) */
 let refreshInterval = 300000;
 
-/* ---------------- CHANNEL LIST (edit here only) ----------------
-   Only keep channel metadata here (id, name, optional logo).
-   No MPD / tokens / DRM keys in HTML.
-*/
+/* ---------------- CHANNEL LIST ---------------- */
 const CHANNELS = [
   {
     id: "CH-3974c2cd-9ec4-4d03-82b1-9c993973e487",
@@ -92,11 +89,17 @@ function buildChannelsGrid() {
   });
 }
 
-/* ---------------- API: fetch MPD for a channel ----------------
-   Expects API to return JSON like: { mpd_url: "https://...." }
-   Adjust if your API differs (e.g. nested fields).
-*/
+/* ---------------- API: fetch MPD for a channel ---------------- */
 async function fetchChannelMpd(channelId) {
+  // For testing: hardcoded MPD for AzamSport1
+  if (channelId === "CH-3974c2cd-9ec4-4d03-82b1-9c993973e487") {
+    const testMpd = "https://cdnblncr.azamtvltd.co.tz/live/eds/AzamSport1/DASH/AzamSport1.mpd?cdntoken=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjE3NjM1MDI4NzcsInNpcCI6IjMuMTcyLjE1LjQ0In0.bhLT8wZoXlJMncJ3ql7oQPC1I8TntugG7ooCY-Uj_lpVMTIsYkz33qmlEv8VortbUNYPYc3tJaJFHI1JBx78ug";
+    debugLog("TEST MPD loaded for AzamSport1", 'success');
+    updateStatus('Api', true);
+    return testMpd;
+  }
+
+  // Otherwise: fetch from API normally
   updateStatus('Api', false);
   try {
     debugLog(`Requesting MPD for ${channelId}`, 'info');
@@ -116,13 +119,14 @@ async function fetchChannelMpd(channelId) {
     }
 
     const json = await res.json();
-    // Common key names: mpd_url or data.mpd_url — adapt as needed
     const mpd = json.mpd_url || (json.data && json.data.mpd_url) || null;
+
     if (!mpd) throw new Error("API returned no mpd_url");
 
     updateStatus('Api', true);
-    debugLog("MPD received", 'success');
+    debugLog("MPD received from API", 'success');
     return mpd;
+
   } catch (err) {
     debugLog(`fetchChannelMpd error: ${err.message}`, 'error');
     updateStatus('Api', false);
@@ -142,7 +146,6 @@ async function initShaka() {
 
   player = new shaka.Player(video);
 
-  // Optional: log Shaka errors to debug
   player.addEventListener('error', e => {
     debugLog("Shaka error: " + (e.detail && e.detail.message ? e.detail.message : JSON.stringify(e)), 'error');
     updateStatus('Player', false);
@@ -162,13 +165,7 @@ function setupPlayerEvents() {
   });
 }
 
-/* Minimal DRM support if ClearKey (optional)
-   If your API provides clearKey info you can configure it here.
-   For now we do nothing visibly — keep status Drm=false until configured.
-*/
 async function configureDRMFromApiData(drmData) {
-  // drmData can contain clearKeys mapping { keyId: key } or license server info.
-  // This function is a placeholder if your API returns DRM metadata.
   if (!player) return;
   if (drmData && drmData.clearKeys) {
     try {
@@ -190,7 +187,6 @@ async function loadChannel(channelId) {
   if (!channel) return;
   currentChannelId = channelId;
 
-  // update header title/logo/technical tab
   $('headerTitle').textContent = channel.name;
   $('headerLogo').textContent = (channel.logoText || channel.name.slice(0,3)).toUpperCase();
   $('technicalChannel').textContent = channel.name;
@@ -201,25 +197,18 @@ async function loadChannel(channelId) {
     showLoading('Fetching stream info...');
     const mpd = await fetchChannelMpd(channelId);
 
-    // optional: if API returns DRM info as well, configure it:
-    // await configureDRMFromApiData(maybeJson.drm);
-
-    // load with Shaka
     if (!player) {
       await initShaka();
     }
 
     debugLog('Loading MPD into player', 'info');
-    await player.load(mpd); // shaka will throw on error
+    await player.load(mpd);
     hideLoading();
     updateStatus('Stream', true);
     debugLog(`Channel ${channel.name} playing`, 'success');
 
-    // update last update timestamp & set refresh timer
     $('lastUpdate').textContent = new Date().toLocaleTimeString();
     startRefreshTimer();
-
-    // store mpd for manual refresh if needed
     return mpd;
   } catch (err) {
     debugLog(`loadChannel failed: ${err.message}`, 'error');
@@ -240,11 +229,9 @@ async function refreshStream() {
   showLoading('Refreshing stream...');
   try {
     const mpd = await fetchChannelMpd(currentChannelId);
-    if (player) {
-      await player.load(mpd);
-      debugLog("Stream reloaded after refresh", 'success');
-    }
+    if (player) await player.load(mpd);
     $('lastUpdate').textContent = new Date().toLocaleTimeString();
+    debugLog("Stream reloaded after refresh", 'success');
   } catch (err) {
     debugLog("Refresh failed: " + err.message, 'error');
   } finally {
@@ -278,7 +265,7 @@ function hideLoading() {
   if (overlay) overlay.style.display = 'none';
 }
 
-/* ---------------- Player controls (wired to HTML) ---------------- */
+/* ---------------- Player controls ---------------- */
 function playVideo() {
   const v = $('videoPlayer');
   if (!v) return;
@@ -346,7 +333,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateStatus('Stream', false);
     $('apiStatus').textContent = 'Connecting...';
 
-    // Attempt to init shaka early to detect support
     try {
       await initShaka();
       $('apiStatus').textContent = 'Ready';
@@ -355,9 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       debugLog('Shaka init failed: ' + e.message, 'error');
     }
 
-    // Optionally auto-select first channel
     if (CHANNELS.length) {
-      // auto-load the first channel
       loadChannel(CHANNELS[0].id).catch(err => debugLog('Auto-load failed: ' + err.message, 'error'));
     }
 
@@ -368,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-/* expose some functions globally so HTML onClick works */
+/* expose some functions globally */
 window.playVideo = playVideo;
 window.pauseVideo = pauseVideo;
 window.refreshStream = refreshStream;
