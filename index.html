@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV Player</title>
+<link rel="stylesheet" href="styles.css">
+<!-- Shaka Player -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.9.6/shaka-player.compiled.js"></script>
+</head>
+<body>
+
+<header>
+    <h1>Live TV</h1>
+    <input id="searchInput" type="text" placeholder="Search channels...">
+</header>
+
+<div id="categories"></div>
+
+<h2 class="section-title">Channels</h2>
+<div id="channelGrid" class="grid"></div>
+
+<h2 class="section-title">Favorites</h2>
+<div id="favoritesGrid" class="grid"></div>
+
+<div id="playerContainer">
+    <video id="videoPlayer" autoplay controls></video>
+    <button id="closePlayer">Close</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
