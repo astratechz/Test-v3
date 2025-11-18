@@ -5,7 +5,7 @@ const API_KEY = "Bearer 51b969b5ddee963de6c75686eb75adfd5709f31fd04335ee0a265449
 // ---------------- CHANNELS ---------------- //
 const channels = [
     {
-        id: "AzamSport1",
+        id: "CH-3974c2cd-9ec4-4d03-82b1-9c993973e487",
         name: "Azam Sport 1",
         category: "Sports",
         logo: "https://i.imgur.com/7K6l1UY.png"
